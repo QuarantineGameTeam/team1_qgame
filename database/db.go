@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"strconv"
 	"team1_qgame/conf"
-
 	"github.com/go-redis/redis/v8"
 )
 
@@ -24,7 +23,7 @@ func SaveUser(user *conf.User) {
 	}
 }
 
-func ReadUser(id string) conf.User {
+func GetUser(id string) conf.User {
 	u, err := storage.Get(ctx, id).Result()
 	if err != nil {
 		panic(err)
