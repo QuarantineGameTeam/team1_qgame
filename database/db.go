@@ -34,3 +34,31 @@ func GetUser(id string) conf.User {
 
 	return user
 }
+
+func IsCreated(id string) bool {
+	_, err := storage.Get(ctx, id).Result()
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func SaveClan(clan *conf.Clan) {
+	j, _ := json.Marshal(clan)
+	err := storage.Set(ctx, clan.Name, string(j), 0).Err()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func GetClan(name string) conf.Clan{
+	u, err := storage.Get(ctx, name).Result()
+	if err != nil {
+		panic(err)
+	}
+	var clan conf.Clan
+
+	json.Unmarshal([]byte(u), &clan)
+
+	return clan
+}

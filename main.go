@@ -27,6 +27,16 @@ func GetUser(msg *tgbotapi.Message) conf.User {
 	return user
 }
 
+func CreateClans() {
+	clan := conf.Clan{Name:"clan1", Members:0, Health: 100.0, Morale: 1.0, Enemy: " ", Resources: 1000}
+	db.SaveClan(&clan)
+	clan = conf.Clan{Name:"clan2", Members:0, Health: 100.0, Morale: 1.0, Enemy: " ", Resources: 1000}
+	db.SaveClan(&clan)
+	clan = conf.Clan{Name:"clan3", Members:0, Health: 100.0, Morale: 1.0, Enemy: " ", Resources: 1000}
+	db.SaveClan(&clan)
+
+}
+
 func Registration(msg *tgbotapi.MessageConfig, bot *tgbotapi.BotAPI){
 	var chooseClan = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
@@ -53,22 +63,30 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		if update.Message != nil {
 
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "<empty>")
-			var user conf.User = GetUser(update.Message)
+			var user conf.User 
+			var clan conf.Clan
 			
 			//if registration is in progress and we're waiting for clan info
 			if RegFlag {
 				user.ClanName = update.Message.Text
 				db.SaveUser(&user)
+				clan = db.GetClan(user.ClanName)
+				clan.Members++
+				db.SaveClan(&clan)
 				msg.Text = "Готово"
 				bot.Send(msg)
 				RegFlag = false
-			} 
+			}
+
 			if update.Message.Text != "/start" {
 				user = db.GetUser(strconv.Itoa(int(update.Message.Chat.ID)))
 			}
+
 			switch update.Message.Text {
 			case "/start":
-				if user.ClanName != "empty"{
+				if db.IsCreated(strconv.Itoa(int(update.Message.Chat.ID))) == false{
+					user = GetUser(update.Message)
+					db.SaveUser(&user)
 					Registration(&msg, bot)
 					RegFlag = true
 				}
@@ -76,6 +94,19 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				user = db.GetUser(strconv.Itoa(int(update.Message.Chat.ID)))
 				msg.Text = "Привіт, " + user.FirstName + " " + user.ClanName
 				bot.Send(msg)
+			case "/clan":
+				clan = db.GetClan(user.ClanName)
+				msg.Text = fmt.Sprintf("Your Clan is %s Member count: %d Your resources: %d", clan.Name, clan.Members, clan.Resources)
+				bot.Send(msg)
+			//for tests only
+			case "/plus":
+				clan = db.GetClan(user.ClanName)
+				clan.Members++
+				db.SaveClan(&clan)
+			case "/minus":
+				clan = db.GetClan(user.ClanName)
+				clan.Members--
+				db.SaveClan(&clan)				
 			}
 		}
 	}
@@ -85,6 +116,6 @@ func main() {
 	go func() {
 		log.Fatal(http.ListenAndServe(":"+conf.BOT_PORT, nil))
 	}()
-
+	CreateClans()
 	getUpdates(NewBot)
 }
